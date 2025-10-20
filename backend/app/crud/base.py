@@ -14,12 +14,16 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.model = model
 
     def get(self, db: Session, id: Any) -> Optional[ModelType]:
-        return db.query(self.model).filter(self.model.id == id).first()
+        return (
+            db.query(self.model)
+            .filter(self.model.id == id, self.model.is_deleted == False)
+            .first()
+        )
 
     def get_multi(
         self, db: Session, *, skip: int = 0, limit: int = 100
     ) -> tuple[List[ModelType], int]:
-        query = db.query(self.model)
+        query = db.query(self.model).filter(self.model.is_deleted == False)
         total = query.count()
         items = query.offset(skip).limit(limit).all()
         return items, total
@@ -54,6 +58,9 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     def remove(self, db: Session, *, id: Any) -> ModelType:
         obj = db.query(self.model).get(id)
-        db.delete(obj)
+        # Soft delete instead of hard delete
+        obj.is_deleted = True
+        db.add(obj)
         db.commit()
+        db.refresh(obj)
         return obj

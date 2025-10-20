@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, DateTime, String
+from sqlalchemy import Boolean, Column, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from app.database import Base
@@ -18,3 +18,4 @@ class BaseModel(Base):
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
+    is_deleted = Column(Boolean, default=False, nullable=False, index=True)

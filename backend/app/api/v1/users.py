@@ -91,3 +91,22 @@ def delete_user(
         raise HTTPException(status_code=400, detail="Cannot delete yourself")
     user = crud.user.remove(db, id=id)
     return user
+
+
+@router.put("/me/settings", response_model=schemas.User)
+def update_current_user_settings(
+    *,
+    db: Session = Depends(deps.get_db),
+    user_in: schemas.UserUpdate,
+    current_user: models.User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Update current user settings (theme preference, etc.)"""
+    db_user = crud.user.get(db, id=current_user.id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Only allow updating theme_preference for now, not sensitive fields
+    allowed_updates = schemas.UserUpdate(theme_preference=user_in.theme_preference)
+
+    user = crud.user.update(db, db_obj=db_user, obj_in=allowed_updates)
+    return user

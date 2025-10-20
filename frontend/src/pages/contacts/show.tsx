@@ -1,17 +1,15 @@
 import React from 'react';
-import { Show, TextField, EmailField, TagField } from '@refinedev/antd';
-import { Typography } from 'antd';
+import { Show, EmailField, TagField } from '@refinedev/antd';
+import { Descriptions } from 'antd';
 import { useShow } from '@refinedev/core';
 import type { Contact } from '@/types/entities';
 
-const { Title } = Typography;
-
 export const ContactShow: React.FC = () => {
-  const showReturn = useShow<Contact>() as any;
-  const queryResult = showReturn.queryResult as any;
-  const data = queryResult?.data;
-  const isLoading = queryResult?.isLoading;
+  const { query } = useShow<Contact>();
+  const { data, isLoading } = query;
   const record = data?.data;
+
+  console.log('Show page data:', { data, record });
 
   const estadoColors: Record<string, string> = {
     prospecto: 'blue',
@@ -22,45 +20,52 @@ export const ContactShow: React.FC = () => {
 
   return (
     <Show isLoading={isLoading}>
-      <Title level={5}>Nombre Completo</Title>
-      <TextField value={record?.nombreCompleto} />
+      <Descriptions bordered column={1} size="middle">
+        <Descriptions.Item label="Nombre Completo">
+          {record?.nombreCompleto || '-'}
+        </Descriptions.Item>
+        
+        <Descriptions.Item label="Email">
+          {record?.email ? <EmailField value={record.email} /> : '-'}
+        </Descriptions.Item>
+        
+        <Descriptions.Item label="Teléfono">
+          {record?.telefono || '-'}
+        </Descriptions.Item>
+        
+        <Descriptions.Item label="Estado">
+          {record?.estado ? (
+            <TagField 
+              value={record.estado} 
+              color={estadoColors[record.estado]} 
+            />
+          ) : '-'}
+        </Descriptions.Item>
 
-      <Title level={5}>Email</Title>
-      <EmailField value={record?.email} />
+        {record?.cedula && (
+          <Descriptions.Item label="Cédula">
+            {record.cedula}
+          </Descriptions.Item>
+        )}
 
-      <Title level={5}>Teléfono</Title>
-      <TextField value={record?.telefono} />
+        {record?.ciudad && (
+          <Descriptions.Item label="Ciudad">
+            {record.ciudad}
+          </Descriptions.Item>
+        )}
 
-      <Title level={5}>Estado</Title>
-      <TagField value={record?.estado} color={estadoColors[record?.estado || 'prospecto']} />
+        {record?.pais && (
+          <Descriptions.Item label="País">
+            {record.pais}
+          </Descriptions.Item>
+        )}
 
-      {record?.cedula && (
-        <>
-          <Title level={5}>Cédula</Title>
-          <TextField value={record.cedula} />
-        </>
-      )}
-
-      {record?.ciudad && (
-        <>
-          <Title level={5}>Ciudad</Title>
-          <TextField value={record.ciudad} />
-        </>
-      )}
-
-      {record?.pais && (
-        <>
-          <Title level={5}>País</Title>
-          <TextField value={record.pais} />
-        </>
-      )}
-
-      {record?.notas && (
-        <>
-          <Title level={5}>Notas</Title>
-          <TextField value={record.notas} />
-        </>
-      )}
+        {record?.notas && (
+          <Descriptions.Item label="Notas">
+            {record.notas}
+          </Descriptions.Item>
+        )}
+      </Descriptions>
     </Show>
   );
 };

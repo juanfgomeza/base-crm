@@ -3,7 +3,7 @@ import axios from 'axios';
 import { API_CONFIG } from '@/config/api';
 
 export const authProvider: AuthProvider = {
-  login: async ({ email, password }: any) => {
+  login: async ({ email, password, remember }: any) => {
     try {
       // Backend expects OAuth2 password flow with form data
       const formData = new URLSearchParams();
@@ -20,7 +20,14 @@ export const authProvider: AuthProvider = {
         }
       );
 
-      localStorage.setItem('token', data.access_token); // Backend returns 'access_token'
+      // Store token - if remember is true, we'll store with longer expiration
+      localStorage.setItem('token', data.access_token);
+      if (remember) {
+        localStorage.setItem('rememberMe', 'true');
+      } else {
+        localStorage.removeItem('rememberMe');
+      }
+
       return {
         success: true,
         redirectTo: '/',

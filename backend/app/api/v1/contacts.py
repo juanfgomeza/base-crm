@@ -15,15 +15,17 @@ def read_contacts(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, alias="page", ge=0),
     limit: int = Query(10, alias="size", ge=1, le=100),
-    estado: Optional[ContactStatus] = Query(None, alias="filter_estado"),
+    estado: Optional[List[ContactStatus]] = Query(None, alias="filter_estado"),
+    sort: Optional[str] = Query(None),
+    order: Optional[str] = Query("asc"),
     current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
-    """Retrieve contacts with pagination and filters"""
+    """Retrieve contacts with pagination, filters and sorting"""
     # Convert page to skip
     skip = skip * limit if skip > 0 else 0
 
     items, total = crud.contact.get_multi_filtered(
-        db, skip=skip, limit=limit, estado=estado
+        db, skip=skip, limit=limit, estados=estado, sort_field=sort, sort_order=order
     )
     return {
         "items": items,

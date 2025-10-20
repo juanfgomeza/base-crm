@@ -10,6 +10,7 @@ class UserBase(BaseModel):
     apellidos: str
     is_active: bool = Field(True, alias="isActive")
     is_superuser: bool = Field(False, alias="isSuperuser")
+    theme_preference: str = Field("light", alias="themePreference")
 
     class Config:
         populate_by_name = True
@@ -26,6 +27,7 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     is_active: Optional[bool] = Field(None, alias="isActive")
     is_superuser: Optional[bool] = Field(None, alias="isSuperuser")
+    theme_preference: Optional[str] = Field(None, alias="themePreference")
 
     class Config:
         populate_by_name = True

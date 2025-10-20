@@ -5,14 +5,17 @@ import routerProvider, {
 } from '@refinedev/react-router';
 import { RefineThemes, ThemedLayout, useNotificationProvider } from '@refinedev/antd';
 import { BrowserRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
-import { ConfigProvider, App as AntdApp } from 'antd';
+import { ConfigProvider, App as AntdApp, theme as antdTheme } from 'antd';
 import esES from 'antd/locale/es_ES';
 
 import { dataProvider } from '@/providers/dataProvider';
 import { authProvider } from '@/providers/authProvider';
+import { CustomSider } from '@/components/CustomSider';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 
 import { DashboardPage } from '@/pages/dashboard';
 import { LoginPage } from '@/pages/login';
+import { UserSettingsPage } from '@/pages/settings';
 import {
   ContactList,
   ContactCreate,
@@ -29,19 +32,25 @@ import {
 import '@refinedev/antd/dist/reset.css';
 import './App.css';
 
-function App() {
+function AppContent() {
   const notificationProvider = useNotificationProvider();
+  const { theme: appTheme } = useTheme();
 
   return (
-    <BrowserRouter>
-      <ConfigProvider theme={RefineThemes.Blue} locale={esES}>
-        <AntdApp>
-          <Refine
-            routerProvider={routerProvider}
-            dataProvider={dataProvider}
-            authProvider={authProvider}
-            notificationProvider={notificationProvider}
-            resources={[
+    <ConfigProvider 
+      theme={{
+        ...RefineThemes.Blue,
+        algorithm: appTheme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+      }} 
+      locale={esES}
+    >
+      <AntdApp>
+        <Refine
+          routerProvider={routerProvider}
+          dataProvider={dataProvider}
+          authProvider={authProvider}
+          notificationProvider={notificationProvider}
+          resources={[
               {
                 name: 'contactos',
                 list: '/contactos',
@@ -77,7 +86,22 @@ function App() {
                     key="authenticated-layout"
                     fallback={<Navigate to="/login" replace />}
                   >
-                    <ThemedLayout>
+                    <ThemedLayout
+                      Sider={() => <CustomSider />}
+                      Title={({ collapsed }) => (
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '8px',
+                          padding: '12px 16px',
+                          fontSize: collapsed ? '16px' : '20px',
+                          fontWeight: 'bold',
+                          color: '#1890ff'
+                        }}>
+                          {collapsed ? '📊' : '📊 Base-CRM'}
+                        </div>
+                      )}
+                    >
                       <Outlet />
                     </ThemedLayout>
                   </Authenticated>
@@ -96,6 +120,7 @@ function App() {
                   <Route path="editar/:id" element={<UserEdit />} />
                   <Route path="mostrar/:id" element={<UserShow />} />
                 </Route>
+                <Route path="/configuracion" element={<UserSettingsPage />} />
               </Route>
               <Route path="/login" element={<LoginPage />} />
             </Routes>
@@ -104,6 +129,15 @@ function App() {
           </Refine>
         </AntdApp>
       </ConfigProvider>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

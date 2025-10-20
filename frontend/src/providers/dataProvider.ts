@@ -7,6 +7,26 @@ const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_CONFIG.baseURL,
   timeout: API_CONFIG.timeout,
   headers: API_CONFIG.headers,
+  paramsSerializer: {
+    // Custom serializer to avoid [] brackets in array parameters
+    // FastAPI expects: filter_estado=prospecto&filter_estado=calificado
+    // Not: filter_estado[]=prospecto&filter_estado[]=calificado
+    serialize: (params: Record<string, any>) => {
+      const parts: string[] = [];
+      Object.keys(params).forEach((key) => {
+        const value = params[key];
+        if (Array.isArray(value)) {
+          // Repeat the parameter name for each value (FastAPI style)
+          value.forEach((v) => {
+            parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(v)}`);
+          });
+        } else if (value !== null && value !== undefined) {
+          parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+        }
+      });
+      return parts.join('&');
+    },
+  },
 });
 
 // Add auth token to requests
@@ -18,14 +38,21 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
+// Helper to convert camelCase to snake_case
+const camelToSnake = (str: string): string => {
+  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+};
+
 export const dataProvider: DataProvider = {
   getList: async ({ resource, pagination, filters, sorters }) => {
     const url = `/${resource}`;
 
-    const { current = 1, pageSize = 10 } = (pagination as any) ?? {};
+    // Refine uses 'currentPage' not 'current'
+    const { current, currentPage, pageSize = 10 } = (pagination as any) ?? {};
+    const page = currentPage || current || 1;
 
     const query: Record<string, any> = {
-      page: current,
+      page: page - 1, // Backend expects 0-based page
       size: pageSize,
     };
 
@@ -33,7 +60,13 @@ export const dataProvider: DataProvider = {
     if (filters) {
       (filters as any).forEach((filter: any) => {
         if ('field' in filter) {
-          query[`filter_${filter.field}`] = filter.value;
+          const fieldName = camelToSnake(filter.field);
+          // If value is an array with single element, extract it
+          const filterValue =
+            Array.isArray(filter.value) && filter.value.length === 1
+              ? filter.value[0]
+              : filter.value;
+          query[`filter_${fieldName}`] = filterValue;
         }
       });
     }
@@ -41,7 +74,8 @@ export const dataProvider: DataProvider = {
     // Add sorting
     if (sorters && (sorters as any).length > 0) {
       const sorter = (sorters as any)[0];
-      query.sort = sorter.field;
+      const fieldName = camelToSnake(sorter.field);
+      query.sort = fieldName;
       query.order = sorter.order;
     }
 
